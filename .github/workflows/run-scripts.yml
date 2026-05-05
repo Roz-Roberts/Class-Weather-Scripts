@@ -40,8 +40,8 @@ jobs:
       - name: List available scripts
         run: uv run python main.py list
 
-      - name: Test installed packages
-        run: uv run python test.py
+      - name: List project packages
+        run: uv run python main.py run packages_list
 
       - name: Run selected script
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.script_name != '' }}
