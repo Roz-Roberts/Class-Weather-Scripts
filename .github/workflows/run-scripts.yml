@@ -1,0 +1,54 @@
+name: Run Class Weather Scripts
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      script_name:
+        description: "Name of the script in Scripts to run, with or without .py"
+        required: false
+        type: string
+      script_args:
+        description: "Optional arguments to pass to the script"
+        required: false
+        type: string
+
+jobs:
+  test-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: pyproject.toml
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: List available scripts
+        run: uv run python main.py list
+
+      - name: Test installed packages
+        run: uv run python test.py
+
+      - name: Run selected script
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.script_name != '' }}
+        env:
+          SCRIPT_NAME: ${{ inputs.script_name }}
+          SCRIPT_ARGS: ${{ inputs.script_args }}
+        run: >
+          uv run python -c "import os, shlex, subprocess, sys;
+          command = [sys.executable, 'main.py', 'run', os.environ['SCRIPT_NAME'], *shlex.split(os.environ.get('SCRIPT_ARGS', ''))];
+          raise SystemExit(subprocess.run(command).returncode)"
